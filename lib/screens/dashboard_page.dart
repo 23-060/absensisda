@@ -3,6 +3,12 @@ import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import '../widgets/bottom_nav.dart';
+import 'lembur_page.dart';
+import 'jadwal_page.dart';
+import 'laporan_page.dart';
+import 'profil_page.dart';
+import '../widgets/header.dart';
+
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -66,7 +72,6 @@ class _DashboardPageState extends State<DashboardPage>
     super.dispose();
   }
 
-  // ── BARU: buka kamera → verifikasi animasi → pindah state ──
   Future<void> _openCameraAndVerify({required bool isMasuk}) async {
     final captured = await showDialog<bool>(
       context: context,
@@ -152,9 +157,9 @@ class _DashboardPageState extends State<DashboardPage>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF2F4F7),
-      body: Column(
+    final pages = [
+      // 1. Dashboard (isi lama kamu yang ada header, bigbutton, dll)
+      Column(
         children: [
           _buildHeader(),
           Expanded(
@@ -187,8 +192,29 @@ class _DashboardPageState extends State<DashboardPage>
               ),
             ),
           ),
-          _buildBottomNav(),
         ],
+      ),
+
+      const LemburPage(),
+
+      const JadwalPage(),
+
+      const LaporanPage(),
+
+      const ProfilPage(),
+    ];
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF2F4F7),
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: pages,
+      ),
+      bottomNavigationBar: BottomNav(
+        selectedIndex: _selectedIndex,
+        onItemSelected: (index) {
+          setState(() => _selectedIndex = index);
+        },
       ),
     );
   }
@@ -196,66 +222,11 @@ class _DashboardPageState extends State<DashboardPage>
   Widget _buildHeader() {
     return Stack(
       children: [
-        ClipPath(
-          clipper: _WaveClipper(),
-          child: Container(
-            height: 228,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFF2B7EE0), Color(0xFF5BA3F5)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-          ),
-        ),
         SafeArea(
           child: Column(
             children: [
-              Padding(
-                padding:
-                const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: 44,
-                      height: 44,
-                      child: Image.asset('assets/logo_white.png',
-                          fit: BoxFit.contain),
-                    ),
-                    const Spacer(),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      mainAxisSize: MainAxisSize.min,
-                      children: const [
-                        Text('Reguler',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 13)),
-                        Text('07.30 - 16.00',
-                            style: TextStyle(
-                                color: Colors.white70, fontSize: 11)),
-                      ],
-                    ),
-                    const SizedBox(width: 10),
-                    Container(
-                      width: 38,
-                      height: 38,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
-                        color: const Color(0xFF5BA3F5),
-                        image: const DecorationImage(
-                          image: AssetImage('assets/profile.jpg'),
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 150),
+              const Header(),
+              const SizedBox(height: 60),
               Text(
                 _jamSekarang,
                 style: const TextStyle(
@@ -305,6 +276,7 @@ class _DashboardPageState extends State<DashboardPage>
               ),
             ],
           ),
+
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
