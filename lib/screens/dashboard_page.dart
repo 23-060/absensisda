@@ -158,7 +158,6 @@ class _DashboardPageState extends State<DashboardPage>
   @override
   Widget build(BuildContext context) {
     final pages = [
-      // 1. Dashboard (isi lama kamu yang ada header, bigbutton, dll)
       Column(
         children: [
           _buildHeader(),
@@ -195,11 +194,12 @@ class _DashboardPageState extends State<DashboardPage>
         ],
       ),
 
-      const LemburPage(),
 
       const JadwalPage(),
 
       const LaporanPage(),
+
+      const LemburPage(),
 
       const ProfilPage(),
     ];
@@ -226,7 +226,7 @@ class _DashboardPageState extends State<DashboardPage>
           child: Column(
             children: [
               const Header(),
-              const SizedBox(height: 60),
+              const SizedBox(height: 10),
               Text(
                 _jamSekarang,
                 style: const TextStyle(

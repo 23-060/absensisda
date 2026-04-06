@@ -38,6 +38,8 @@ dependencies:
   geolocator: ^14.0.2
   camera: ^0.12.0+1
   flutter_svg: ^2.0.0
+  font_awesome_flutter: ^11.0.0
+
 
 dev_dependencies:
   flutter_native_splash: ^2.4.0
