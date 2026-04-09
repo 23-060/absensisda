@@ -15,7 +15,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: const SecurityGate(), // cek dulu sebelum masuk
+      home: const SecurityGate(),
     );
   }
 }
@@ -37,11 +37,9 @@ class _SecurityGateState extends State<SecurityGate> {
   Future<void> _check() async {
     bool safe = await SecurityCheck.isDeviceSafe(context);
     if (!safe) {
-      // kalau tidak aman, dialog sudah muncul di SecurityCheck
       return;
     }
 
-    // kalau aman, tentukan apakah sudah login atau belum
     bool loggedIn = await _isLoggedIn();
 
     if (loggedIn) {
@@ -58,8 +56,6 @@ class _SecurityGateState extends State<SecurityGate> {
   }
 
   Future<bool> _isLoggedIn() async {
-    // contoh sederhana: cek token di SharedPreferences
-    // untuk demo, anggap belum login
     return false;
   }
 

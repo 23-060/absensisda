@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dashboard_page.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -12,6 +15,7 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _nipController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -20,11 +24,57 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  void _handleLogin() {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const DashboardPage()),
-    );
+  Future<void> _handleLogin() async {
+    final nip = _nipController.text.trim();
+    final password = _passwordController.text;
+    
+    if (nip.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('NIP dan Password harus diisi!')),
+      );
+      return;
+    }
+    
+    setState(() => _isLoading = true);
+    
+    try {
+      final url = Uri.parse('http://192.168.50.157:8000/api/auth/login');
+      
+      final response = await http.post(
+        url,
+        body: {
+          'nip': nip,
+          'password': password,
+        },
+      );
+      
+      final data = json.decode(response.body);
+      
+      // Jika Berhasil Login
+      if (response.statusCode == 200 && data['success'] == true) {
+        // Simpan "Tiket" Token
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('token', data['token']);
+        if (!mounted) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const DashboardPage()),
+        );
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(data['message'] ?? 'Login Gagal')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Tidak dapat terhubung ke server Laravel')),
+      );
+      print("Login Error: " + e.toString()); 
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -202,9 +252,10 @@ class _LoginPageState extends State<LoginPage> {
                 SizedBox(
                   height: 52,
                   child: ElevatedButton(
-                    onPressed: _handleLogin,
+                    onPressed: _isLoading ? null : _handleLogin,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF4990E1),
+                      disabledBackgroundColor: const Color(0xFF4990E1).withOpacity(0.7),
                       foregroundColor: Colors.white,
                       elevation: 0,
                       shadowColor: Colors.transparent,
@@ -212,21 +263,30 @@ class _LoginPageState extends State<LoginPage> {
                         borderRadius: BorderRadius.circular(14),
                       ),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
-                        Icon(Icons.login_rounded, size: 20),
-                        SizedBox(width: 10),
-                        Text(
-                          'Log In',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.5,
+                    child: _isLoading
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.login_rounded, size: 20),
+                              SizedBox(width: 10),
+                              Text(
+                                'Log In',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                      ],
-                    ),
                   ),
                 ),
 
