@@ -38,7 +38,7 @@ class _LoginPageState extends State<LoginPage> {
     setState(() => _isLoading = true);
     
     try {
-      final url = Uri.parse('http://192.168.50.157:8000/api/auth/login');
+      final url = Uri.parse('http://10.0.2.2:8000/api/auth/login');
       
       final response = await http.post(
         url,
@@ -52,9 +52,11 @@ class _LoginPageState extends State<LoginPage> {
       
       // Jika Berhasil Login
       if (response.statusCode == 200 && data['success'] == true) {
-        // Simpan "Tiket" Token
+        // Simpan "Tiket" Token dan Data Profil
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('token', data['token']);
+        await prefs.setString('user_data', json.encode(data['user']));
+        
         if (!mounted) return;
         Navigator.pushReplacement(
           context,

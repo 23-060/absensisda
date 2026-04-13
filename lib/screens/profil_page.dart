@@ -1,13 +1,58 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/header.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'login_page.dart';
 
-class ProfilPage extends StatelessWidget {
+class ProfilPage extends StatefulWidget {
   const ProfilPage({super.key});
 
+  @override
+  State<ProfilPage> createState() => _ProfilPageState();
+}
+
+class _ProfilPageState extends State<ProfilPage> {
+  Map<String, dynamic>? _userData;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userStr = prefs.getString('user_data');
+    if (userStr != null) {
+      if (mounted) {
+        setState(() {
+          _userData = json.decode(userStr);
+          _isLoading = false;
+        });
+      }
+    } else {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _logout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+    if (!mounted) return;
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginPage()),
+      (route) => false,
+    );
+  }
+
   void _showUbahProfil(BuildContext context) {
-    final emailController = TextEditingController();
-    final hpController = TextEditingController();
+    final emailController = TextEditingController(text: _userData?['email'] ?? '');
+    final hpController = TextEditingController(text: _userData?['phone'] ?? '');
 
     showModalBottomSheet(
       context: context,
@@ -54,11 +99,11 @@ class ProfilPage extends StatelessWidget {
               const SizedBox(height: 22),
 
               // Nama Lengkap (statis)
-              _staticField("Nama Lengkap", "Muhammad Azhari"),
+              _staticField("Nama Lengkap", _userData?['name'] ?? "Tidak Diketahui"),
               const SizedBox(height: 12),
-              _staticField("NIP", "199412062022031009"),
+              _staticField("NIP", _userData?['nip'] ?? "-"),
               const SizedBox(height: 12),
-              _staticField("Jabatan", "Pengolah Data dan Informasi"),
+              _staticField("Jabatan", "ID Jabatan: ${_userData?['jabatan_id'] ?? '-'}"),
 
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 16),
@@ -128,7 +173,7 @@ class ProfilPage extends StatelessWidget {
                     flex: 1,
                     child: ElevatedButton.icon(
                       onPressed: () {
-                        // TODO: simpan perubahan
+                        // TODO: simpan perubahan via API
                         Navigator.pop(context);
                       },
                       icon: const Icon(Icons.save_outlined, size: 16),
@@ -161,76 +206,149 @@ class ProfilPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF2F4F7),
-      body: Column(
-        children: [
-          const Header(),
-          const SizedBox(height: 20),
+      body: _isLoading 
+          ? const Center(child: CircularProgressIndicator(color: Color(0xFF3D8BEF)))
+          : Column(
+              children: [
+                const Header(),
+                const SizedBox(height: 20),
 
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  // Kartu Informasi Profil
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 18),
+                Expanded(
+                  child: SingleChildScrollView(
                     child: Column(
                       children: [
-                        //  Kartu identitas profil (biru)
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF3D8BEF),
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.07),
-                                blurRadius: 20,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Row(
+                        // Kartu Informasi Profil
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 18),
+                          child: Column(
                             children: [
+                              //  Kartu identitas profil (biru)
                               Container(
-                                width: 60,
-                                height: 60,
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.all(color: Colors.white, width: 2),
-                                  image: const DecorationImage(
-                                    image: AssetImage('assets/profile.jpg'),
-                                    fit: BoxFit.cover,
-                                  ),
+                                  color: const Color(0xFF3D8BEF),
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.07),
+                                      blurRadius: 20,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 60,
+                                      height: 60,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(color: Colors.white, width: 2),
+                                        image: const DecorationImage(
+                                          image: AssetImage('assets/profile.jpg'),
+                                          fit: BoxFit.cover,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            _userData?['name'] ?? "Nama Tidak Diketahui",
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w700,
+                                              color: Colors.white,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          const Text(
+                                            "Reguler",
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              color: Colors.white70,
+                                            ),
+                                          ),
+                                          const Text(
+                                            "Senin - Jumat",
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.white70,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                              const SizedBox(width: 16),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: const [
-                                  Text(
-                                    "Muhammad Azhari",
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w700,
-                                      color: Colors.white,
+
+                              const SizedBox(height: 16),
+
+                              //  Kartu informasi profil (putih)
+                              Container(
+                                padding: const EdgeInsets.all(18),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.07),
+                                      blurRadius: 20,
+                                      offset: const Offset(0, 4),
                                     ),
-                                  ),
-                                  Text(
-                                    "Reguler",
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: Colors.white70,
+                                  ],
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        const Text(
+                                          "Informasi Profil",
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w800,
+                                            color: Color(0xFF1A1A2E),
+                                          ),
+                                        ),
+                                        OutlinedButton.icon(
+                                          onPressed: () => _showUbahProfil(context),
+                                          icon: const Icon(Icons.edit, size: 13),
+                                          label: const Text("Ubah"),
+                                          style: OutlinedButton.styleFrom(
+                                            foregroundColor: const Color(0xFF3D8BEF),
+                                            side: const BorderSide(color: Color(0xFFBFDBFE), width: 1.5),
+                                            backgroundColor: const Color(0xFFEFF6FF),
+                                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(10),
+                                            ),
+                                            textStyle: const TextStyle(
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                  ),
-                                  Text(
-                                    "Senin, 07.30 - 16.00",
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.white70,
-                                    ),
-                                  ),
-                                ],
+                                    const SizedBox(height: 14),
+
+                                    _infoItem("NIP", _userData?['nip'] ?? "-"),
+                                    _divider(),
+                                    _infoItem("Jabatan", "ID: ${_userData?['jabatan_id'] ?? '-'}"),
+                                    _divider(),
+                                    _infoItem("Email", _userData?['email'] ?? "-"),
+                                    _divider(),
+                                    _infoItem("No. HP", _userData?['phone'] ?? "-"),
+                                    _divider(),
+                                    _infoItem("NIK", _userData?['nik'] ?? "-"),
+                                  ],
+                                ),
                               ),
                             ],
                           ),
@@ -238,9 +356,10 @@ class ProfilPage extends StatelessWidget {
 
                         const SizedBox(height: 16),
 
-                        //  Kartu informasi profil (putih)
+                        // Kartu tombol aksi
                         Container(
                           padding: const EdgeInsets.all(18),
+                          margin: const EdgeInsets.symmetric(horizontal: 18),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(20),
@@ -253,124 +372,58 @@ class ProfilPage extends StatelessWidget {
                             ],
                           ),
                           child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const Text(
-                                    "Informasi Profil",
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w800,
-                                      color: Color(0xFF1A1A2E),
-                                    ),
+                              // Helpdesk WhatsApp
+                              ElevatedButton.icon(
+                                onPressed: () {},
+                                icon: const FaIcon(FontAwesomeIcons.whatsapp, size: 20),
+                                label: const Text("Helpdesk Ubah Password"),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF4990E1),
+                                  foregroundColor: Colors.white,
+                                  minimumSize: const Size.fromHeight(48),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
                                   ),
-                                  OutlinedButton.icon(
-                                    onPressed: () => _showUbahProfil(context),
-                                    icon: const Icon(Icons.edit, size: 13),
-                                    label: const Text("Ubah"),
-                                    style: OutlinedButton.styleFrom(
-                                      foregroundColor: const Color(0xFF3D8BEF),
-                                      side: const BorderSide(color: Color(0xFFBFDBFE), width: 1.5),
-                                      backgroundColor: const Color(0xFFEFF6FF),
-                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                      textStyle: const TextStyle(
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 13,
-                                      ),
-                                    ),
+                                  textStyle: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 15,
                                   ),
-                                ],
+                                  elevation: 0,
+                                ),
                               ),
-                              const SizedBox(height: 14),
+                              const SizedBox(height: 10),
 
-                              _infoItem("NIP", "199412062022031009"),
-                              _divider(),
-                              _infoItem("Jabatan", "Pengolah Data dan Informasi"),
-                              _divider(),
-                              _infoItem("Email", "email@gmail.com"),
-                              _divider(),
-                              _infoItem("No. HP", "0812345678"),
+                              // Keluar
+                              ElevatedButton.icon(
+                                onPressed: _logout,
+                                icon: const Icon(Icons.logout, size: 20),
+                                label: const Text("Keluar"),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFEF4444),
+                                  foregroundColor: Colors.white,
+                                  minimumSize: const Size.fromHeight(48),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  textStyle: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 15,
+                                  ),
+                                  elevation: 0,
+                                ),
+                              ),
                             ],
                           ),
                         ),
+
+                        const SizedBox(height: 20),
                       ],
                     ),
                   ),
-
-                  const SizedBox(height: 16),
-
-                  // Kartu tombol aksi
-                  Container(
-                    padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.07),
-                          blurRadius: 20,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        // Helpdesk WhatsApp
-                        ElevatedButton.icon(
-                          onPressed: () {},
-                          icon: const FaIcon(FontAwesomeIcons.whatsapp, size: 20),
-                          label: const Text("Helpdesk Ubah Password"),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF4990E1),
-                            foregroundColor: Colors.white,
-                            minimumSize: const Size.fromHeight(48),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            textStyle: const TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 15,
-                            ),
-                            elevation: 0,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-
-                        // Keluar
-                        ElevatedButton.icon(
-                          onPressed: () => Navigator.pop(context),
-                          icon: const Icon(Icons.logout, size: 20),
-                          label: const Text("Keluar"),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFEF4444),
-                            foregroundColor: Colors.white,
-                            minimumSize: const Size.fromHeight(48),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            textStyle: const TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 15,
-                            ),
-                            elevation: 0,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
-                ],
-              ),
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
     );
   }
 
